@@ -169,6 +169,8 @@ class Migration extends Model
 
     private $magento_regions = array();
     private $zones = array();
+    private $order_status = array();
+    private $currency = array();
 
     /**
      * Migration constructor.
@@ -311,6 +313,8 @@ class Migration extends Model
     public function importOrder()
     {
         $orders = $this->getOrders();
+        $this->setOrderStatus();
+        $this->setCurrency();
 
         $tables = array(
             'order' => static::OC_PREFIX . 'order',
@@ -1347,6 +1351,16 @@ class Migration extends Model
                 $shipping_zone =$this->zones[$shipping_zone_id];
             }
 
+            $order_status_id = 0;
+            if (isset($this->order_status[$order->getStatus()])) {
+                $order_status_id = $this->order_status[$order->getStatus()];
+            }
+
+            $currency_id = 0;
+            if (isset($this->currency[$order->getOrderCurrencyCode()])) {
+                $currency_id = $this->currency[$order->getOrderCurrencyCode()];
+            }
+
             $data = array(
                 "order_id" => $order->getEntityId(),
                 "invoice_no" => '',
@@ -1394,15 +1408,15 @@ class Migration extends Model
                 "shipping_code" => "",
                 "comment" => "",
                 "total" => $order->getGrandTotal(),
-                "order_status_id" => $order->getStatus(),
+                "order_status_id" => $order_status_id,
                 "affiliate_id" => '',
                 "commission" => $order->getAffiliateCredit(),
                 "marketing_id" => "",
                 "tracking" => "",
                 "language_id" => static::DEFAULT_LANGUAGE_ID,
-                "currency_id" =>  "",
-                "currency_code" =>  "",
-                "currency_value" =>  "",
+                "currency_id" =>  $currency_id,
+                "currency_code" =>  $order->getOrderCurrencyCode(),
+                "currency_value" =>  1,
                 "ip" =>  $order->getRemoteIp(),
                 "forwarded_ip" =>  "",
                 "user_agent" =>  "",
@@ -1446,9 +1460,13 @@ class Migration extends Model
     {
         /** @var SalesFlatOrderStatusHistory $item */
         foreach ($collection->getItems() as $item) {
+            $order_status_id = 0;
+            if (isset($this->order_status[$item->getStatus()])) {
+                $order_status_id = $this->order_status[$item->getStatus()];
+            }
             $data = array(
                 "order_id" => $item->getParentId(),
-                "order_status_id" => $item->getStatus(),
+                "order_status_id" => $order_status_id,
                 "notify" => $item->getIsCustomerNotified(),
                 "comment" => $item->getEntityName(),
                 "date_added" => $item->getCreatedAt(),
@@ -1586,6 +1604,52 @@ class Migration extends Model
             );
 
             $this->insert(static::OC_PREFIX . 'url_alias', $values, $fields);
+        }
+    }
+
+    private function setOrderStatus()
+    {
+        $sql_data = $this->config->get('sql_data');
+
+        if (isset($sql_data['order_status'])) {
+            $this->truncate(array(static::OC_PREFIX . 'order_status'));
+            $sql = file_get_contents('sql/' . $sql_data['order_status']);
+            $this->queryOC($sql);
+        }
+
+
+        $sql = "SELECT * FROM " . static::OC_PREFIX . "order_status group by `name`";
+        $result = $this->queryOC($sql);
+
+        foreach ($result as $status) {
+            $this->order_status[$status['name']] = $status['order_status_id'];
+        }
+
+        $mapping_data = $this->config->get('mapping_data');
+        if (isset($mapping_data['order_status'])) {
+            foreach ($mapping_data['order_status'] as $magento_status => $opencart_status) {
+                if (isset($this->order_status[$opencart_status]) && !isset($this->order_status[$magento_status])) {
+                    $this->order_status[$magento_status] = $this->order_status[$opencart_status];
+                }
+            }
+        }
+    }
+
+    private function setCurrency()
+    {
+        $sql_data = $this->config->get('sql_data');
+
+        if (isset($sql_data['currency'])) {
+            $this->truncate(array(static::OC_PREFIX . 'currency'));
+            $sql = file_get_contents('sql/' . $sql_data['currency']);
+            $this->queryOC($sql);
+        }
+
+        $sql = "SELECT * FROM " . static::OC_PREFIX . "currency";
+        $result = $this->queryOC($sql);
+
+        foreach ($result as $currency) {
+            $this->currency[$currency['code']] = $currency['currency_id'];
         }
     }
 }
