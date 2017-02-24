@@ -1,0 +1,23 @@
+{
+  "name": "erisitohang/magento2openCart",
+  "description": "Migration data from Magento to OpenCart",
+  "version": "1.0",
+  "type": "project",
+  "keywords": ["magento", "opencart", "migration"],
+  "homepage": "https://github.com/erisitohang/magento2openCart",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Eri Sitohang",
+      "email": "eri.sitohang@outlook.com",
+      "role": "Developer"
+    }
+  ],
+  "support": {
+    "issues": "https://github.com/erisitohang/magento2openCart/issues",
+    "docs": "https://github.com/erisitohang/magento2openCart/blob/master/docs/README.md"
+  },
+  "require": {
+    "php": ">=5.6.0"
+  }
+}
