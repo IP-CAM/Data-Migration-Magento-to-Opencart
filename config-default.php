@@ -8,19 +8,32 @@ return array(
     */
     'db' => array(
         'opencart' => array(
-            'hostname' => 'localhost',
+            'hostname' => 'local.dev',
             'username' => 'root',
             'password' => '',
-            'database' => 'ocpencart',
+            'database' => 'opencart',
+            'prefix' => 'oc_'
         ),
         'magento' => array(
-            'hostname' => 'localhost',
+            'hostname' => 'local.dev',
             'username' => 'root',
             'password' => '',
             'database' => 'magento',
+            'prefix' => ''
         ),
     ),
+    /*
+    |--------------------------------------------------------------------------
+    | Language
+    |--------------------------------------------------------------------------
+    |
+    */
+    'language' => array(
+        1 => "english",
+        2 => "japan"
+    ),
 
+    'store_url' => 'https://www.magento.dev',
     'unwanted_strings' => array(),
     /*
     |--------------------------------------------------------------------------
@@ -37,7 +50,7 @@ return array(
     |--------------------------------------------------------------------------
     |
     */
-    'magento_url_source' => 'http://www.magento.dev',
+    'magento_url_source' => 'https://www.magento.dev',
     'image_magento_product_path' => '/media/catalog/product/',
     'image_magento_category_path' => '/media/catalog/',
 
@@ -63,17 +76,17 @@ return array(
     'order_total_codes' => array(
         1 => array(
             'code' => 'sub_total',
-            'title' => '小計',
+            'title' => 'Sub Total',
             'method' => 'getSubtotal'
         ),
         3 => array(
             'code' => 'shipping',
-            'title' => '配送 (送料)',
+            'title' => 'Shipping',
             'method' => 'getShippingAmount'
         ),
         9 => array(
             'code' => 'total',
-            'title' => '合計金額',
+            'title' => 'Total',
             'method' => 'getGrandTotal'
         ),
     ),
@@ -98,6 +111,11 @@ return array(
     */
     'mapping_data' => array(
         'order_status' => array(
+        ),
+        'stock_status' => array(
+            'in_stock' => 7,
+            'out_of_stock' => 5,
+            'is_shipping' => 1,
         ),
     ),
 );

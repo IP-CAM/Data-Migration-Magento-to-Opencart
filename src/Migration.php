@@ -96,11 +96,6 @@ class Migration extends Model
     /**
      * @var string
      */
-    const OC_PREFIX = "oc_";
-
-    /**
-     * @var string
-     */
     const QUANTITY = "qty";
 
     /**
@@ -171,6 +166,7 @@ class Migration extends Model
     private $zones = array();
     private $order_status = array();
     private $currency = array();
+    private $languages;
 
     /**
      * Migration constructor.
@@ -181,6 +177,12 @@ class Migration extends Model
     public function __construct(Config $config, $print = false)
     {
         parent::__construct($config, $print);
+
+        $this->languages = $this->config->get('language');
+        if (!is_array($this->languages)) {
+            $this->languages = array(static::DEFAULT_LANGUAGE_ID => "english");
+        }
+
         $this->setAttributeCode(static::PRODUCT_TYPE_ID, self::PRODUCT_ATTRIBUTE_CODE);
         $this->setAttributeCode(static::CATEGORY_TYPE_ID, self::CATALOG_ATTRIBUTE_CODE);
         $this->setAttributeCode(static::CUSTOMER_TYPE_ID, self::CUSTOMER_ATTRIBUTE_CODE);
@@ -317,10 +319,10 @@ class Migration extends Model
         $this->setCurrency();
 
         $tables = array(
-            'order' => static::OC_PREFIX . 'order',
-            'order_product' => static::OC_PREFIX . 'order_product',
-            'order_total' => static::OC_PREFIX . 'order_total',
-            'order_history' => static::OC_PREFIX . 'order_history',
+            'order' => $this->prefix_oc . 'order',
+            'order_product' => $this->prefix_oc . 'order_product',
+            'order_total' => $this->prefix_oc . 'order_total',
+            'order_history' => $this->prefix_oc . 'order_history',
         );
 
         $this->truncate($tables);
@@ -451,12 +453,12 @@ class Migration extends Model
      */
     private function insertCategory(CategoryCollection $collection) {
         $table = array(
-            'category' => static::OC_PREFIX . 'category',
-            'category_description' => static::OC_PREFIX . 'category_description',
-            'category_path' => static::OC_PREFIX . 'category_path',
-            'category_to_layout' => static::OC_PREFIX . 'category_to_layout',
-            'category_to_store' => static::OC_PREFIX . 'category_to_store',
-            'url_alias' => static::OC_PREFIX . 'url_alias',
+            'category' => $this->prefix_oc . 'category',
+            'category_description' => $this->prefix_oc . 'category_description',
+            'category_path' => $this->prefix_oc . 'category_path',
+            'category_to_layout' => $this->prefix_oc . 'category_to_layout',
+            'category_to_store' => $this->prefix_oc . 'category_to_store',
+            'url_alias' => $this->prefix_oc . 'url_alias',
         );
         $this->truncate($table);
         /** @var Category $item */
@@ -480,21 +482,24 @@ class Migration extends Model
             );
             $this->insert($table['category'], $values, $fields);
 
+
             /**
              * Insert Category Description
              */
-            $fields = "category_id, language_id, name, description, meta_title, meta_description, meta_keyword";
-            $values = sprintf(
-                "%d, %d, '%s', '%s', '%s', '%s', '%s'",
-                $item->getEntityId(),
-                static::DEFAULT_LANGUAGE_ID,
-                $item->getName(),
-                $item->getDescription(),
-                $item->getMetaTitle(),
-                $item->getDescription(),
-                $item->getMetaKeywords()
-            );
-            $this->insert($table['category_description'], $values, $fields);
+            foreach ($this->languages as $language_id => $language) {
+                $fields = "category_id, language_id, name, description, meta_title, meta_description, meta_keyword";
+                $values = sprintf(
+                    "%d, %d, '%s', '%s', '%s', '%s', '%s'",
+                    $item->getEntityId(),
+                    $language_id,
+                    $item->getName(),
+                    $item->getDescription(),
+                    $item->getMetaTitle(),
+                    $item->getDescription(),
+                    $item->getMetaKeywords()
+                );
+                $this->insert($table['category_description'], $values, $fields);
+            }
 
             /**
              * Insert Category Path
@@ -552,25 +557,41 @@ class Migration extends Model
     private function insertProduct(ProductCollection $productCollection) {
         /** @var  Product $product */
         $table = array(
-            'product' => static::OC_PREFIX . 'product',
-            'product_description' => static::OC_PREFIX . 'product_description',
-            'product_image' => static::OC_PREFIX . 'product_image',
-            'product_to_store' => static::OC_PREFIX . 'product_to_store',
-            'product_to_layout' => static::OC_PREFIX . 'product_to_layout',
-            'product_reward' => static::OC_PREFIX . 'product_reward',
-            'product_special' => static::OC_PREFIX . 'product_special',
-            'product_discount' => static::OC_PREFIX . 'product_discount',
-            'product_related' => static::OC_PREFIX . 'product_related',
-            'product_to_category' => static::OC_PREFIX . 'product_to_category',
-            'review' => static::OC_PREFIX . 'review',
-            'product_attribute' => static::OC_PREFIX . 'product_attribute',
+            'product' => $this->prefix_oc . 'product',
+            'product_description' => $this->prefix_oc . 'product_description',
+            'product_image' => $this->prefix_oc . 'product_image',
+            'product_to_store' => $this->prefix_oc . 'product_to_store',
+            'product_to_layout' => $this->prefix_oc . 'product_to_layout',
+            'product_reward' => $this->prefix_oc . 'product_reward',
+            'product_special' => $this->prefix_oc . 'product_special',
+            'product_discount' => $this->prefix_oc . 'product_discount',
+            'product_related' => $this->prefix_oc . 'product_related',
+            'product_to_category' => $this->prefix_oc . 'product_to_category',
+            'review' => $this->prefix_oc . 'review',
+            'product_attribute' => $this->prefix_oc . 'product_attribute',
         );
         $this->truncate($table);
         $this->createAttribute();
         $this->createManufacture($productCollection);
         foreach ($productCollection->getItems() as $product) {
-            $stock_status_id = ($product->getIsInStock()) ? self::IN_STOCK : self::OUT_OF_STOCK;
-            $is_shipping = self::IS_SHIPPING;
+
+            $mapping_data = $this->config->get('mapping_data');
+            if (isset($mapping_data['stock_status']['in_stock']) &&
+                isset($mapping_data['stock_status']['out_of_stock'])
+            ) {
+                $stock_status_id = ($product->getIsInStock()) ? $mapping_data['stock_status']['in_stock'] :
+                    $mapping_data['stock_status']['out_of_stock'];
+            } else {
+                $stock_status_id = ($product->getIsInStock()) ? self::IN_STOCK : self::OUT_OF_STOCK;
+            }
+
+            if (isset($mapping_data['stock_status']['is_shipping'])) {
+                $is_shipping = $mapping_data['stock_status']['is_shipping'];
+            } else {
+                $is_shipping = static::IS_SHIPPING;
+            }
+            
+
             $subtract = 1;
             $minimum = 1;
             //$manufacturer = ($product->getManufacturer()) ? $product->getManufacturer() : 0;
@@ -600,12 +621,13 @@ class Migration extends Model
             /**
              * Insert Product Desc
              */
-            $language_id = self::DEFAULT_LANGUAGE_ID;
-            $fields = "product_id, language_id, name, description, tag, meta_title, meta_description, meta_keyword";
-            $description = Helper::updateDescription($this->config, $product->getDescription());
-            $values = "{$product->getEntityId()}, {$language_id}, '{$product->getName()}', '{$description}',".
-                "'', '{$product->getMetaTitle()}', '{$product->getMetaDescription()}', '{$product->getMetaKeyword()}'";
-            $this->insert($table['product_description'], $values, $fields);
+            foreach ($this->languages as $language_id => $language) {
+                $fields = "product_id, language_id, name, description, tag, meta_title, meta_description, meta_keyword";
+                $description = Helper::updateDescription($this->config, $product->getDescription());
+                $values = "{$product->getEntityId()}, {$language_id}, '{$product->getName()}', '{$description}',".
+                    "'', '{$product->getMetaTitle()}', '{$product->getMetaDescription()}', '{$product->getMetaKeyword()}'";
+                $this->insert($table['product_description'], $values, $fields);
+            }
 
             /**
              * Insert product images
@@ -707,7 +729,7 @@ class Migration extends Model
                     'product_id=' . $product->getEntityId(),
                     $product->getUrlPath()
                 );
-                $this->insert(static::OC_PREFIX . 'url_alias', $values, $fields);
+                $this->insert($this->prefix_oc . 'url_alias', $values, $fields);
             }
 
             /**
@@ -1010,10 +1032,10 @@ class Migration extends Model
     private function createAttribute()
     {
         $table = array(
-            'attribute_group' => static::OC_PREFIX . 'attribute_group',
-            'attribute_group_description' => static::OC_PREFIX . 'attribute_group_description',
-            'attribute' => static::OC_PREFIX . 'attribute',
-            'attribute_description' => static::OC_PREFIX . 'attribute_description',
+            'attribute_group' => $this->prefix_oc . 'attribute_group',
+            'attribute_group_description' => $this->prefix_oc . 'attribute_group_description',
+            'attribute' => $this->prefix_oc . 'attribute',
+            'attribute_description' => $this->prefix_oc . 'attribute_description',
         );
 
         $this->truncate($table);
@@ -1043,8 +1065,8 @@ class Migration extends Model
     private function createManufacture(ProductCollection $collection)
     {
         $table = array(
-            'manufacturer' => static::OC_PREFIX . 'manufacturer',
-            'manufacturer_to_store' => static::OC_PREFIX . 'manufacturer_to_store',
+            'manufacturer' => $this->prefix_oc . 'manufacturer',
+            'manufacturer_to_store' => $this->prefix_oc . 'manufacturer_to_store',
         );
 
         $this->truncate($table);
@@ -1152,8 +1174,8 @@ class Migration extends Model
     {
         /** @var  Product $product */
         $table = array(
-            'customer' => static::OC_PREFIX . 'customer',
-            'customer_reward' => static::OC_PREFIX . 'customer_reward',
+            'customer' => $this->prefix_oc . 'customer',
+            'customer_reward' => $this->prefix_oc . 'customer_reward',
         );
         $this->truncate($table);
 
@@ -1163,37 +1185,40 @@ class Migration extends Model
             /**
              * Insert customer
              */
-            $fields = "customer_id, customer_group_id, store_id, language_id, firstname, lastname, email, telephone," .
-                "fax, password, salt, cart, wishlist, newsletter, address_id, custom_field, ip, status, approved," .
-                "safe, token, code, date_added";
-            $values = sprintf(
-                "%d, %d, %d, %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s'," .
+            foreach ($this->languages as $language_id => $language) {
+                $fields = "customer_id, customer_group_id, store_id, language_id, firstname, lastname, email, telephone," .
+                    "fax, password, salt, cart, wishlist, newsletter, address_id, custom_field, ip, status, approved," .
+                    "safe, token, code, date_added";
+                $values = sprintf(
+                    "%d, %d, %d, %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s'," .
                     "'%s', %d, %d, %d, '%s', '%s', '%s'",
-                $item->getEntityId(),
-                $item->getGroupId(),
-                $item->getStoreId(),
-                static::DEFAULT_LANGUAGE_ID,
-                $item->getFirstname(),
-                $item->getLastname(),
-                $item->getEmail(),
-                $item->getTelephone(),
-                $item->getFax(),
-                $item->getPasswordHash(),
-                '',
-                '',
-                '',
-                $item->getNewsletter(),
-                '',
-                '',
-                '',
-                $item->getIsActive(),
-                1,
-                1,
-                '',
-                '',
-                $item->getCreatedAt()
-            );
-            $this->insert($table['customer'], $values, $fields);
+                    $item->getEntityId(),
+                    $item->getGroupId(),
+                    $item->getStoreId(),
+                    $language_id,
+                    $item->getFirstname(),
+                    $item->getLastname(),
+                    $item->getEmail(),
+                    $item->getTelephone(),
+                    $item->getFax(),
+                    $item->getPasswordHash(),
+                    '',
+                    '',
+                    '',
+                    $item->getNewsletter(),
+                    '',
+                    '',
+                    '',
+                    $item->getIsActive(),
+                    1,
+                    1,
+                    '',
+                    '',
+                    $item->getCreatedAt()
+                );
+                $this->insert($table['customer'], $values, $fields);
+            }
+
 
             $rewardPoints = $this->getRewardPoints($item->getEntityId());
             /** @var RewardPointsTransaction $reward */
@@ -1258,7 +1283,7 @@ class Migration extends Model
     {
         /** @var  Product $product */
         $table = array(
-            'address' => static::OC_PREFIX . 'address',
+            'address' => $this->prefix_oc . 'address',
         );
         $this->truncate($table);
 
@@ -1361,13 +1386,17 @@ class Migration extends Model
                 $currency_id = $this->currency[$order->getOrderCurrencyCode()];
             }
 
+            $language_id = static::DEFAULT_LANGUAGE_ID;
+            foreach ($this->languages as $key => $language) {
+                $language_id = $key;
+            }
             $data = array(
                 "order_id" => $order->getEntityId(),
                 "invoice_no" => '',
                 "invoice_prefix" => '',
                 "store_id" => $order->getStoreId(),
                 "store_name" => $order->getStoreName(),
-                "store_url" => "https://www.genkipet.co/",
+                "store_url" => $this->config['store_url'],
                 "customer_id" => $order->getCustomerId(),
                 "customer_group_id" => $order->getCustomerGroupId(),
                 "firstname" => $order->getCustomerFirstname(),
@@ -1413,7 +1442,7 @@ class Migration extends Model
                 "commission" => $order->getAffiliateCredit(),
                 "marketing_id" => "",
                 "tracking" => "",
-                "language_id" => static::DEFAULT_LANGUAGE_ID,
+                "language_id" => $language_id,
                 "currency_id" =>  $currency_id,
                 "currency_code" =>  $order->getOrderCurrencyCode(),
                 "currency_value" =>  1,
@@ -1565,8 +1594,8 @@ class Migration extends Model
     {
 
         $tables = array(
-            'information' => static::OC_PREFIX . 'information',
-            'information_description' => static::OC_PREFIX . 'information_description',
+            'information' => $this->prefix_oc . 'information',
+            'information_description' => $this->prefix_oc . 'information_description',
         );
 
         $this->truncate($tables);
@@ -1581,17 +1610,19 @@ class Migration extends Model
             );
             $this->insertArray($tables['information'], $data);
 
-            $data = array(
-                "information_id" => $item->getPageId(),
-                "language_id" => static::DEFAULT_LANGUAGE_ID,
-                "title" => $item->getTitle(),
-                "description" => $item->getContent(),
-                "meta_title" => $item->getTitle(),
-                "meta_description" => $item->getMetaDescription(),
-                "meta_keyword" => $item->getMetaKeyword(),
-            );
+            foreach ($this->languages as $language_id => $language) {
+                $data = array(
+                    "information_id" => $item->getPageId(),
+                    "language_id" => $language_id,
+                    "title" => $item->getTitle(),
+                    "description" => $item->getContent(),
+                    "meta_title" => $item->getTitle(),
+                    "meta_description" => $item->getMetaDescription(),
+                    "meta_keyword" => $item->getMetaKeyword(),
+                );
 
-            $this->insertArray($tables['information_description'], $data);
+                $this->insertArray($tables['information_description'], $data);
+            }
 
             /**
              * Insert product url alias
@@ -1603,7 +1634,7 @@ class Migration extends Model
                 trim($item->getTitle()) . '.html'
             );
 
-            $this->insert(static::OC_PREFIX . 'url_alias', $values, $fields);
+            $this->insert($this->prefix_oc . 'url_alias', $values, $fields);
         }
     }
 
@@ -1612,13 +1643,13 @@ class Migration extends Model
         $sql_data = $this->config->get('sql_data');
 
         if (isset($sql_data['order_status'])) {
-            $this->truncate(array(static::OC_PREFIX . 'order_status'));
+            $this->truncate(array($this->prefix_oc . 'order_status'));
             $sql = file_get_contents('sql/' . $sql_data['order_status']);
             $this->queryOC($sql);
         }
 
 
-        $sql = "SELECT * FROM " . static::OC_PREFIX . "order_status group by `name`";
+        $sql = "SELECT * FROM " . $this->prefix_oc . "order_status group by `name`";
         $result = $this->queryOC($sql);
 
         foreach ($result as $status) {
@@ -1640,12 +1671,12 @@ class Migration extends Model
         $sql_data = $this->config->get('sql_data');
 
         if (isset($sql_data['currency'])) {
-            $this->truncate(array(static::OC_PREFIX . 'currency'));
+            $this->truncate(array($this->prefix_oc . 'currency'));
             $sql = file_get_contents('sql/' . $sql_data['currency']);
             $this->queryOC($sql);
         }
 
-        $sql = "SELECT * FROM " . static::OC_PREFIX . "currency";
+        $sql = "SELECT * FROM " . $this->prefix_oc . "currency";
         $result = $this->queryOC($sql);
 
         foreach ($result as $currency) {

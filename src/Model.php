@@ -19,6 +19,9 @@ class Model
      */
     protected $config;
 
+    protected $prefix_oc;
+    protected $prefix_m;
+
     /**
      * Model constructor.
      * @param Config $config
@@ -40,6 +43,7 @@ class Model
             $this->dbOc = new PDO('mysql:host=' .$db_config['hostname'] .
                 ';dbname=' . $db_config['database'] .
                 ';charset=utf8mb4', $db_config['username'], $db_config['password']);
+            $this->prefix_oc = $db_config['prefix'];
         }
     }
 
@@ -49,6 +53,7 @@ class Model
             $this->dbM = new PDO('mysql:host=' .$db_config['hostname'] .
                 ';dbname=' . $db_config['database'] .
                 ';charset=utf8mb4', $db_config['username'], $db_config['password']);
+            $this->prefix_m = $db_config['prefix'];
         }
     }
 
