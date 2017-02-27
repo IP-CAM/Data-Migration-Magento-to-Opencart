@@ -19,7 +19,14 @@ class Model
      */
     protected $config;
 
+    /**
+     * @var string
+     */
     protected $prefix_oc;
+
+    /**
+     * @var string
+     */
     protected $prefix_m;
 
     /**

@@ -482,7 +482,6 @@ class Migration extends Model
             );
             $this->insert($table['category'], $values, $fields);
 
-
             /**
              * Insert Category Description
              */
@@ -574,7 +573,6 @@ class Migration extends Model
         $this->createAttribute();
         $this->createManufacture($productCollection);
         foreach ($productCollection->getItems() as $product) {
-
             $mapping_data = $this->config->get('mapping_data');
             if (isset($mapping_data['stock_status']['in_stock']) &&
                 isset($mapping_data['stock_status']['out_of_stock'])
@@ -590,7 +588,6 @@ class Migration extends Model
             } else {
                 $is_shipping = static::IS_SHIPPING;
             }
-            
 
             $subtract = 1;
             $minimum = 1;
@@ -1219,7 +1216,6 @@ class Migration extends Model
                 $this->insert($table['customer'], $values, $fields);
             }
 
-
             $rewardPoints = $this->getRewardPoints($item->getEntityId());
             /** @var RewardPointsTransaction $reward */
             foreach ($rewardPoints->getItems() as $reward) {
@@ -1390,13 +1386,14 @@ class Migration extends Model
             foreach ($this->languages as $key => $language) {
                 $language_id = $key;
             }
+            $order_id = $order->getIncrementId();
             $data = array(
-                "order_id" => $order->getEntityId(),
+                "order_id" => $order_id,
                 "invoice_no" => '',
                 "invoice_prefix" => '',
                 "store_id" => $order->getStoreId(),
-                "store_name" => $order->getStoreName(),
-                "store_url" => $this->config['store_url'],
+                "store_name" => $this->config['store']['name'],
+                "store_url" => $this->config['store']['url'],
                 "customer_id" => $order->getCustomerId(),
                 "customer_group_id" => $order->getCustomerGroupId(),
                 "firstname" => $order->getCustomerFirstname(),
@@ -1463,11 +1460,11 @@ class Migration extends Model
 
             $order_items = $this->getOrderItems($order->getEntityId());
 
-            $this->insertOrderProduct($tables['order_product'], $order_items);
+            $this->insertOrderProduct($tables['order_product'], $order_id, $order_items);
 
            foreach ($this->config->get('order_total_codes') as $key => $value) {
                $data = array(
-                   'order_id' => $order->getEntityId(),
+                   'order_id' => $order_id,
                    'code' => $value['code'],
                    'title' => $value['title'],
                    'value' => $order->{$value['method']}(),
@@ -1477,15 +1474,16 @@ class Migration extends Model
            }
 
            $order_history = $this->getOrderHistory($order->getEntityId());
-           $this->insertOrderHistory($tables['order_history'], $order_history);
+           $this->insertOrderHistory($tables['order_history'], $order_id, $order_history);
         }
     }
 
     /**
      * @param string $table
+     * @param int $order_id
      * @param SalesFlatOrderStatusHistoryCollection $collection
      */
-    private function insertOrderHistory($table, SalesFlatOrderStatusHistoryCollection $collection)
+    private function insertOrderHistory($table, $order_id, SalesFlatOrderStatusHistoryCollection $collection)
     {
         /** @var SalesFlatOrderStatusHistory $item */
         foreach ($collection->getItems() as $item) {
@@ -1494,7 +1492,7 @@ class Migration extends Model
                 $order_status_id = $this->order_status[$item->getStatus()];
             }
             $data = array(
-                "order_id" => $item->getParentId(),
+                "order_id" => $order_id,
                 "order_status_id" => $order_status_id,
                 "notify" => $item->getIsCustomerNotified(),
                 "comment" => $item->getEntityName(),
@@ -1550,15 +1548,16 @@ class Migration extends Model
     }
 
     /**
-     * @param strin $table
+     * @param string $table
+     * @param int $order_id
      * @param SalesFlatOrderItemCollection $collection
      */
-    private function insertOrderProduct($table, SalesFlatOrderItemCollection $collection)
+    private function insertOrderProduct($table, $order_id, SalesFlatOrderItemCollection $collection)
     {
         /** @var SalesFlatOrderItem $item */
         foreach ($collection->getItems() as $item) {
             $data = array(
-                "order_id" => $item->getOrderId(),
+                "order_id" => $order_id,
                 "product_id" => $item->getProductId(),
                 "name" => $item->getName(),
                 "model" => $item->getSku(),

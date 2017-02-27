@@ -8,14 +8,14 @@ return array(
     */
     'db' => array(
         'opencart' => array(
-            'hostname' => 'local.dev',
+            'hostname' => 'localhost',
             'username' => 'root',
             'password' => '',
             'database' => 'opencart',
             'prefix' => 'oc_'
         ),
         'magento' => array(
-            'hostname' => 'local.dev',
+            'hostname' => 'localhost',
             'username' => 'root',
             'password' => '',
             'database' => 'magento',
@@ -33,7 +33,10 @@ return array(
         2 => "japan"
     ),
 
-    'store_url' => 'https://www.magento.dev',
+    'store' => array(
+        'url' => 'https://www.store.dev',
+        'name' => 'Store Name',
+    ),
     'unwanted_strings' => array(),
     /*
     |--------------------------------------------------------------------------
