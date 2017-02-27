@@ -1194,7 +1194,7 @@ class Migration extends Model
             $data = array(
                 "customer_id" => $item->getEntityId(),
                 "customer_group_id" => $item->getGroupId(),
-                "store_id" => $item->getStoreId(),
+                "store_id" => static::STORE_ID,
                 "language_id" => $language_id,
                 "firstname" => $item->getFirstname(),
                 "lastname" => $item->getLastname(),
