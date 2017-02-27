@@ -303,8 +303,8 @@ class Migration extends Model
      */
     public function all()
     {
-        $this->importProducts();
-        $this->importCustomers();
+        $this->importProduct();
+        $this->importCustomer();
         $this->importOrder();
         $this->importPage();
     }
@@ -333,9 +333,9 @@ class Migration extends Model
     }
 
     /**
-     * php index.php --module=migration --action=importCustomers
+     * php index.php --module=migration --action=importCustomer
      */
-    public function importCustomers()
+    public function importCustomer()
     {
         $customers = $this->getCustomers();
         $addresses = $this->getAddresses();
@@ -344,9 +344,9 @@ class Migration extends Model
     }
 
     /**
-     * php index.php --module=migration --action=importProducts
+     * php index.php --module=migration --action=importProduct
      */
-    public function importProducts()
+    public function importProduct()
     {
         $products = $this->getProducts();
         $categories = $this->getCategories();
@@ -482,6 +482,7 @@ class Migration extends Model
             );
             $this->insert($table['category'], $values, $fields);
 
+
             /**
              * Insert Category Description
              */
@@ -573,6 +574,7 @@ class Migration extends Model
         $this->createAttribute();
         $this->createManufacture($productCollection);
         foreach ($productCollection->getItems() as $product) {
+
             $mapping_data = $this->config->get('mapping_data');
             if (isset($mapping_data['stock_status']['in_stock']) &&
                 isset($mapping_data['stock_status']['out_of_stock'])
@@ -588,6 +590,7 @@ class Migration extends Model
             } else {
                 $is_shipping = static::IS_SHIPPING;
             }
+
 
             $subtract = 1;
             $minimum = 1;
@@ -1101,7 +1104,8 @@ class Migration extends Model
                 'customer',
                 $item->getEntityId(),
                 $type_id,
-                self::CUSTOMER_ATTRIBUTE_CODE
+                self::CUSTOMER_ATTRIBUTE_CODE,
+                false
             );
             $item->setAttribute($attribute);
             $collection->addItem($item, $item->getEntityId());
@@ -1177,44 +1181,43 @@ class Migration extends Model
         $this->truncate($table);
 
         /** @var Customer $item */
+        $language_id = static::DEFAULT_LANGUAGE_ID;
+        foreach ($this->languages as $key => $language) {
+            $language_id = $key;
+        }
+
         foreach ($collection->getItems() as $item)
         {
             /**
              * Insert customer
              */
-            foreach ($this->languages as $language_id => $language) {
-                $fields = "customer_id, customer_group_id, store_id, language_id, firstname, lastname, email, telephone," .
-                    "fax, password, salt, cart, wishlist, newsletter, address_id, custom_field, ip, status, approved," .
-                    "safe, token, code, date_added";
-                $values = sprintf(
-                    "%d, %d, %d, %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s'," .
-                    "'%s', %d, %d, %d, '%s', '%s', '%s'",
-                    $item->getEntityId(),
-                    $item->getGroupId(),
-                    $item->getStoreId(),
-                    $language_id,
-                    $item->getFirstname(),
-                    $item->getLastname(),
-                    $item->getEmail(),
-                    $item->getTelephone(),
-                    $item->getFax(),
-                    $item->getPasswordHash(),
-                    '',
-                    '',
-                    '',
-                    $item->getNewsletter(),
-                    '',
-                    '',
-                    '',
-                    $item->getIsActive(),
-                    1,
-                    1,
-                    '',
-                    '',
-                    $item->getCreatedAt()
-                );
-                $this->insert($table['customer'], $values, $fields);
-            }
+            $data = array(
+                "customer_id" => $item->getEntityId(),
+                "customer_group_id" => $item->getGroupId(),
+                "store_id" => $item->getStoreId(),
+                "language_id" => $language_id,
+                "firstname" => $item->getFirstname(),
+                "lastname" => $item->getLastname(),
+                "email" => $item->getEmail(),
+                "telephone" => $item->getTelephone(),
+                "fax" => $item->getFax(),
+                "password" => $item->getPasswordHash(),
+                "salt" => "",
+                "cart" => "",
+                "wishlist" => "",
+                "newsletter" => $item->getNewsletter(),
+                "address_id" => "",
+                "custom_field" => "",
+                "ip" => "",
+                "status" => $item->getIsActive(),
+                "approved" => 1,
+                "safe" => 1,
+                "token" => "",
+                "code" => "",
+                "date_added" => $item->getCreatedAt()
+            );
+
+            $this->insertArray($table['customer'],$data);
 
             $rewardPoints = $this->getRewardPoints($item->getEntityId());
             /** @var RewardPointsTransaction $reward */
@@ -1386,14 +1389,15 @@ class Migration extends Model
             foreach ($this->languages as $key => $language) {
                 $language_id = $key;
             }
+            $store = $this->config->get('store');
             $order_id = $order->getIncrementId();
             $data = array(
                 "order_id" => $order_id,
                 "invoice_no" => '',
                 "invoice_prefix" => '',
-                "store_id" => $order->getStoreId(),
-                "store_name" => $this->config['store']['name'],
-                "store_url" => $this->config['store']['url'],
+                "store_id" => static::STORE_ID,
+                "store_name" => $store['name'],
+                "store_url" => $store['url'],
                 "customer_id" => $order->getCustomerId(),
                 "customer_group_id" => $order->getCustomerGroupId(),
                 "firstname" => $order->getCustomerFirstname(),
