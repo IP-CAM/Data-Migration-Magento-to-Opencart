@@ -1599,6 +1599,7 @@ class Migration extends Model
         $tables = array(
             'information' => $this->prefix_oc . 'information',
             'information_description' => $this->prefix_oc . 'information_description',
+            'information_to_store' => $this->prefix_oc . 'information_to_store',
         );
 
         $this->truncate($tables);
@@ -1638,6 +1639,17 @@ class Migration extends Model
             );
 
             $this->insert($this->prefix_oc . 'url_alias', $values, $fields);
+
+            /**
+             * Insert information to store
+             */
+            $fields = "information_id, store_id";
+            $values = sprintf(
+                "%d, %d",
+                $item->getPageId(),
+                static::STORE_ID
+            );
+            $this->insert($this->prefix_oc . 'information_to_store', $values, $fields);
         }
     }
 
