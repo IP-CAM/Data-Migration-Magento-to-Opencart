@@ -1291,6 +1291,7 @@ class Migration extends Model
             'address' => $this->prefix_oc . 'address',
         );
         $this->truncate($table);
+        $mapping_data = $this->config->get('mapping_data');
 
         /** @var CustomerAddress $item */
         foreach ($collection->getItems() as $item)
@@ -1299,6 +1300,10 @@ class Migration extends Model
              * Insert customer
              */
             $zone_id = 0;
+            $country_id = $item->getCountryId();
+            if (isset($mapping_data['address']['country_id'])) {
+                $country_id = $mapping_data['address']['country_id'];
+            }
             if (isset($this->magento_regions[$item->getRegion()])) {
                 $zone_id = $this->magento_regions[$item->getRegion()];
             }
@@ -1316,7 +1321,7 @@ class Migration extends Model
                 $item->getRegion(),
                 $item->getCity(),
                 $item->getPostcode(),
-                $item->getCountryId(),
+                $country_id,
                 $zone_id,
                 ''
             );
