@@ -337,10 +337,11 @@ class Migration extends Model
      */
     public function importCustomer()
     {
-        $customers = $this->getCustomers();
         $addresses = $this->getAddresses();
-        $this->insertCustomer($customers);
         $this->insertAddress($addresses);
+        $customers = $this->getCustomers();
+        $this->insertCustomer($customers, $addresses);
+
     }
 
     /**
@@ -1170,8 +1171,9 @@ class Migration extends Model
 
     /**
      * @param CustomerCollection $collection
+     * @param CustomerAddressCollection $addresses_collection
      */
-    private function insertCustomer(CustomerCollection $collection)
+    private function insertCustomer(CustomerCollection $collection, $addresses_collection)
     {
         /** @var  Product $product */
         $table = array(
@@ -1191,6 +1193,10 @@ class Migration extends Model
             /**
              * Insert customer
              */
+            $default_address_id = $item->getDefaultBilling();
+            /** @var CustomerAddress $default_address */
+            $default_address = $addresses_collection->getItem($default_address_id);
+
             $data = array(
                 "customer_id" => $item->getEntityId(),
                 "customer_group_id" => $item->getGroupId(),
@@ -1199,8 +1205,8 @@ class Migration extends Model
                 "firstname" => $item->getFirstname(),
                 "lastname" => $item->getLastname(),
                 "email" => $item->getEmail(),
-                "telephone" => $item->getTelephone(),
-                "fax" => $item->getFax(),
+                "telephone" => $default_address->getTelephone(),
+                "fax" => $default_address->getFax(),
                 "password" => $item->getPasswordHash(),
                 "salt" => "",
                 "cart" => "",

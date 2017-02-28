@@ -20,10 +20,15 @@ class CustomerAddressCollection
 
     public function deleteItem($key) {}
 
-    public function getItem($key) {}
+    public function getItem($key) {
+        if (isset($this->items[$key])) {
+            return $this->items[$key];
+        }
+
+        return new CustomerAddress(array());
+    }
 
     public function getItems() {
         return $this->items;
     }
-
 }
