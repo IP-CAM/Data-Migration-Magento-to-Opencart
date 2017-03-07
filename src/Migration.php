@@ -503,7 +503,7 @@ class Migration extends Model
                     $item->getName(),
                     $item->getDescription(),
                     $item->getMetaTitle(),
-                    $item->getDescription(),
+                    $item->getMetaDescription(),
                     $item->getMetaKeywords()
                 );
                 $this->insert($tables['category_description'], $values, $fields);
