@@ -351,4 +351,14 @@ class Product
     {
         return $this->kh_ingredients;
     }
+
+    /**
+     * @param mixed $description
+     */
+    public function setDescription($description)
+    {
+        $this->description = $description;
+    }
+
+
 }

@@ -121,4 +121,14 @@ return array(
             'is_shipping' => 1,
         ),
     ),
+    /*
+    |--------------------------------------------------------------------------
+    | Store ID
+    |--------------------------------------------------------------------------
+    | This is not applicable for all magento, this is only want to solve my case.
+    | My case is I want to use product attributes from store_id 2 if they have
+    | attributes in store_id = 2
+    |
+    */
+    'store_id' => 0,
 );

@@ -125,7 +125,7 @@ class Migration extends Model
     /**
      * @var string
      */
-    const CATALOG_ATTRIBUTE_CODE = 'catalogAttributeCode';
+    const CATEGORY_ATTRIBUTE_CODE = 'categoryAttributeCode';
     /**
      * @var string
      */
@@ -184,7 +184,7 @@ class Migration extends Model
         }
 
         $this->setAttributeCode(static::PRODUCT_TYPE_ID, self::PRODUCT_ATTRIBUTE_CODE);
-        $this->setAttributeCode(static::CATEGORY_TYPE_ID, self::CATALOG_ATTRIBUTE_CODE);
+        $this->setAttributeCode(static::CATEGORY_TYPE_ID, self::CATEGORY_ATTRIBUTE_CODE);
         $this->setAttributeCode(static::CUSTOMER_TYPE_ID, self::CUSTOMER_ATTRIBUTE_CODE);
         $this->setAttributeCode(static::ADDRESS_TYPE_ID, self::ADDRESS_ATTRIBUTE_CODE);
         $this->regions();
@@ -350,7 +350,9 @@ class Migration extends Model
     public function importProduct()
     {
         $products = $this->getProducts();
+        $products = $this->updateProductCollection($products);
         $categories = $this->getCategories();
+        $categories = $this->updateCategoryCollection($categories);
         $this->insertCategory($categories);
         $this->insertProduct($products);
     }
@@ -396,7 +398,7 @@ class Migration extends Model
                 'catalog_category',
                 $item->getEntityId(),
                 $type_id,
-                self::CATALOG_ATTRIBUTE_CODE
+                self::CATEGORY_ATTRIBUTE_CODE
             );
             $item->setAttribute($attribute);
             $collection->addItem($item);
@@ -931,7 +933,17 @@ class Migration extends Model
             'varchar',
         );
         $attributes = array();
-        $attributes = $this->getAttribute($prefix, $product_id, $type_id, $types, $attributes, $attribute_code, $is_store_id);
+        $store_id =  static::STORE_ID;
+        $attributes = $this->getAttribute(
+            $prefix,
+            $product_id,
+            $type_id,
+            $types,
+            $attributes,
+            $attribute_code,
+            $store_id,
+            $is_store_id
+        );
 
         return $attributes;
     }
@@ -960,9 +972,12 @@ class Migration extends Model
      * @param $type_id
      * @param $types
      * @param $attributes
+     * @param $attribute_code
+     * @param $store_id
+     * @param $is_store_id
      * @return mixed
      */
-    private function getAttribute($prefix, $product_id, $type_id, $types, $attributes, $attribute_code, $is_store_id)
+    private function getAttribute($prefix, $product_id, $type_id, $types, $attributes, $attribute_code, $store_id, $is_store_id)
     {
         foreach ($types as $type) {
             $sql = sprintf(
@@ -984,7 +999,7 @@ class Migration extends Model
                     $prefix . "_entity_" . $type,
                     $type_id,
                     $product_id,
-                    static::STORE_ID
+                    $store_id
                 );
             }
 
@@ -1708,5 +1723,91 @@ class Migration extends Model
         foreach ($result as $currency) {
             $this->currency[$currency['code']] = $currency['currency_id'];
         }
+    }
+
+    /**
+     * @param $products
+     * @return ProductCollection
+     */
+    private function updateProductCollection($products)
+    {
+
+        $type_id = static::PRODUCT_TYPE_ID;
+        $store_id = $this->config->get('store_id');
+
+        if (!$store_id && $store_id == static::STORE_ID) {
+            return $products;
+        }
+        $types = array(
+            'datetime',
+            'decimal',
+            'gallery',
+            'group_price',
+            'int',
+            'media_gallery',
+            'text',
+            'varchar',
+        );
+
+        $attributes = array();
+        /** @var ProductCollection $products */
+        /** @var Product $product */
+        foreach ($products->getItems() as &$product) {
+            $attribute = $this->getAttribute(
+                'catalog_product',
+                $product->getEntityId(),
+                $type_id,
+                $types,
+                $attributes,
+                static::PRODUCT_ATTRIBUTE_CODE,
+                $store_id,
+                true
+            );
+            $product->setAttribute($attribute);
+        }
+
+        return $products;
+    }
+
+    /**
+     * @param CategoryCollection $categories
+     * @return CategoryCollection
+     */
+    private function updateCategoryCollection($categories)
+    {
+        $type_id = static::CATEGORY_TYPE_ID;
+        $store_id = $this->config->get('store_id');
+
+        if (!$store_id && $store_id == static::STORE_ID) {
+            return $categories;
+        }
+        $types = array(
+            'datetime',
+            'decimal',
+            'gallery',
+            'int',
+            'media_gallery',
+            'text',
+            'varchar',
+        );
+
+        $attributes = array();
+        /** @var CategoryCollection $categories */
+        /** @var Category $category */
+        foreach ($categories->getItems() as &$category) {
+            $attribute = $this->getAttribute(
+                'catalog_category',
+                $category->getEntityId(),
+                $type_id,
+                $types,
+                $attributes,
+                static::CATEGORY_ATTRIBUTE_CODE,
+                $store_id,
+                true
+            );
+            $category->setAttribute($attribute);
+        }
+
+        return $categories;
     }
 }
