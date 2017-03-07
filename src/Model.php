@@ -208,4 +208,10 @@ class Model
 
         $this->insert($table, implode(", ", $values), implode(", ", $fields));
     }
+
+    public function delete($table, $condition)
+    {
+        $sql = "DELETE FROM {$table} WHERE {$condition}";
+        $this->queryOC($sql);
+    }
 }

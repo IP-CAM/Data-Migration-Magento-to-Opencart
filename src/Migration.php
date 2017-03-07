@@ -5,6 +5,7 @@
  */
 class Migration extends Model
 {
+    const URL_ALIAS = 'url_alias';
 
     /**
      * @var int
@@ -455,15 +456,19 @@ class Migration extends Model
      * @param CategoryCollection $collection
      */
     private function insertCategory(CategoryCollection $collection) {
-        $table = array(
+        $tables = array(
             'category' => $this->prefix_oc . 'category',
             'category_description' => $this->prefix_oc . 'category_description',
             'category_path' => $this->prefix_oc . 'category_path',
             'category_to_layout' => $this->prefix_oc . 'category_to_layout',
             'category_to_store' => $this->prefix_oc . 'category_to_store',
-            'url_alias' => $this->prefix_oc . 'url_alias',
         );
-        $this->truncate($table);
+        $this->truncate($tables);
+
+        $table = $this->prefix_oc . self::URL_ALIAS;
+        $condition = "`query` like 'category_id=%'";
+        $this->delete($table, $condition);
+
         /** @var Category $item */
         foreach ($collection->getItems() as $item) {
             /**
@@ -483,7 +488,7 @@ class Migration extends Model
                 $item->getCreatedAt(),
                 $item->getUpdatedAt()
             );
-            $this->insert($table['category'], $values, $fields);
+            $this->insert($tables['category'], $values, $fields);
 
 
             /**
@@ -501,7 +506,7 @@ class Migration extends Model
                     $item->getDescription(),
                     $item->getMetaKeywords()
                 );
-                $this->insert($table['category_description'], $values, $fields);
+                $this->insert($tables['category_description'], $values, $fields);
             }
 
             /**
@@ -514,7 +519,7 @@ class Migration extends Model
                 $item->getEntityId(),
                 1
             );
-            $this->insert($table['category_path'], $values, $fields);
+            $this->insert($tables['category_path'], $values, $fields);
 
             /**
              * Insert Category Layout
@@ -526,7 +531,7 @@ class Migration extends Model
                 0,
                 0
             );
-            $this->insert($table['category_to_layout'], $values, $fields);
+            $this->insert($tables['category_to_layout'], $values, $fields);
 
             /**
              * Insert Category Store
@@ -537,7 +542,7 @@ class Migration extends Model
                 $item->getEntityId(),
                 0
             );
-            $this->insert($table['category_to_store'], $values, $fields);
+            $this->insert($tables['category_to_store'], $values, $fields);
 
             /**
              * Insert category url alias
@@ -549,7 +554,7 @@ class Migration extends Model
                     'category_id=' . $item->getEntityId(),
                     $item->getUrlPath()
                 );
-                $this->insert($table['url_alias'], $values, $fields);
+                $this->insert($this->prefix_oc . self::URL_ALIAS, $values, $fields);
             }
         }
     }
@@ -559,7 +564,7 @@ class Migration extends Model
      */
     private function insertProduct(ProductCollection $productCollection) {
         /** @var  Product $product */
-        $table = array(
+        $tables = array(
             'product' => $this->prefix_oc . 'product',
             'product_description' => $this->prefix_oc . 'product_description',
             'product_image' => $this->prefix_oc . 'product_image',
@@ -573,7 +578,11 @@ class Migration extends Model
             'review' => $this->prefix_oc . 'review',
             'product_attribute' => $this->prefix_oc . 'product_attribute',
         );
-        $this->truncate($table);
+        $this->truncate($tables);
+        $table = $this->prefix_oc . self::URL_ALIAS;
+        $condition = "`query` like 'product_id=%'";
+        $this->delete($table, $condition);
+
         $this->createAttribute();
         $this->createManufacture($productCollection);
         foreach ($productCollection->getItems() as $product) {
@@ -619,7 +628,7 @@ class Migration extends Model
                 "{$is_shipping}, {$price}, {$price}, {$subtract}, {$minimum}, " .
                 "{$status}, '{$product->getCreatedAt()}', '{$product->getUpdatedAt()}', {$product->getWeight()},
                 '{$image}', {$views}";
-            $this->insert($table['product'], $values, $fields);
+            $this->insert($tables['product'], $values, $fields);
 
             /**
              * Insert Product Desc
@@ -629,7 +638,7 @@ class Migration extends Model
                 $description = Helper::updateDescription($this->config, $product->getDescription());
                 $values = "{$product->getEntityId()}, {$language_id}, '{$product->getName()}', '{$description}',".
                     "'', '{$product->getMetaTitle()}', '{$product->getMetaDescription()}', '{$product->getMetaKeyword()}'";
-                $this->insert($table['product_description'], $values, $fields);
+                $this->insert($tables['product_description'], $values, $fields);
             }
 
             /**
@@ -642,7 +651,7 @@ class Migration extends Model
                 $image = Helper::getProductImage($this->config, $product_image->getValue());
                 $fields = "product_id, image, sort_order";
                 $values = "{$product->getEntityId()}, '{$image}', {$position}";
-                $this->insert($table['product_image'], $values, $fields);
+                $this->insert($tables['product_image'], $values, $fields);
             }
 
             /**
@@ -650,14 +659,14 @@ class Migration extends Model
              */
             $fields = "product_id, store_id";
             $values = "{$product->getEntityId()}, " . static::STORE_ID;
-            $this->insert($table['product_to_store'], $values, $fields);
+            $this->insert($tables['product_to_store'], $values, $fields);
 
             /**
              * Insert product to layout
              */
             $fields = "product_id, store_id, layout_id";
             $values = "{$product->getEntityId()}, " . static::STORE_ID . ", " . static::DEFAULT_LAYOUT_ID;
-            $this->insert($table['product_to_layout'], $values, $fields);
+            $this->insert($tables['product_to_layout'], $values, $fields);
 
             /**
              * Insert product reward
@@ -665,7 +674,7 @@ class Migration extends Model
             $reward = ROUND(($product->getPrice()/100), 0);
             $fields = "product_id, customer_group_id, points";
             $values = "{$product->getEntityId()}, " . static::DEFAULT_CUSTOMER_GROUP_ID . ", " . $reward;
-            $this->insert($table['product_reward'], $values, $fields);
+            $this->insert($tables['product_reward'], $values, $fields);
 
             /**
              * Insert special price
@@ -682,7 +691,7 @@ class Migration extends Model
                     $start,
                     $product->getSpecialToDate()
                 );
-                $this->insert($table['product_special'], $values, $fields);
+                $this->insert($tables['product_special'], $values, $fields);
             }
 
             /**
@@ -704,7 +713,7 @@ class Migration extends Model
                     $start_date,
                     $end_date
                 );
-                $this->insert($table['product_discount'], $values, $fields);
+                $this->insert($tables['product_discount'], $values, $fields);
             }
 
             /**
@@ -719,7 +728,7 @@ class Migration extends Model
                     $item->getProductId(),
                     $item->getLinkedProductId()
                 );
-                $this->insert($table['product_related'], $values, $fields);
+                $this->insert($tables['product_related'], $values, $fields);
             }
 
             /**
@@ -732,7 +741,7 @@ class Migration extends Model
                     'product_id=' . $product->getEntityId(),
                     $product->getUrlPath()
                 );
-                $this->insert($this->prefix_oc . 'url_alias', $values, $fields);
+                $this->insert($this->prefix_oc . self::URL_ALIAS, $values, $fields);
             }
 
             /**
@@ -747,7 +756,7 @@ class Migration extends Model
                     $item->getProductId(),
                     $item->getCategoryId()
                 );
-                $this->insert($table['product_to_category'], $values, $fields);
+                $this->insert($tables['product_to_category'], $values, $fields);
             }
             /**
              * Insert product review
@@ -767,7 +776,7 @@ class Migration extends Model
                     $item->getCreatedAt(),
                     static::DATE_DEFAULT
                 );
-                $this->insert($table['review'], $values, $fields);
+                $this->insert($tables['review'], $values, $fields);
             }
 
             foreach ($this->config->get('product_attribute') as $key => $attr) {
@@ -781,7 +790,7 @@ class Migration extends Model
                         1,
                         $product->{$method}()
                     );
-                    $this->insert($table['product_attribute'], $values, $fields);
+                    $this->insert($tables['product_attribute'], $values, $fields);
                 }
             }
 
@@ -1629,6 +1638,9 @@ class Migration extends Model
         );
 
         $this->truncate($tables);
+        $table = $this->prefix_oc . self::URL_ALIAS;
+        $condition = "`query` like 'information_id=%'";
+        $this->delete($table, $condition);
 
         /** @var CmsPage $item */
         foreach ($collection->getItems() as $item) {
@@ -1664,7 +1676,7 @@ class Migration extends Model
                 trim($item->getTitle()) . '.html'
             );
 
-            $this->insert($this->prefix_oc . 'url_alias', $values, $fields);
+            $this->insert($this->prefix_oc . self::URL_ALIAS, $values, $fields);
 
             /**
              * Insert information to store
