@@ -30,6 +30,7 @@ class Product
     private $meta_description;
     private $image;
     private $url_path;
+    private $url_key;
 
     private $kh_content_amount;
     private $kh_displayed_eta_date;
@@ -310,6 +311,14 @@ class Product
     public function getUrlPath()
     {
         return $this->url_path;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getUrlKey()
+    {
+        return $this->url_key;
     }
 
     /**

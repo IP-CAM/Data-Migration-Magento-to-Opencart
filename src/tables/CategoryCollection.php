@@ -26,4 +26,9 @@ class CategoryCollection
         return $this->items;
     }
 
+    public function updateItem($obj, $key) {
+        if ($key && isset($this->items[$key])) {
+            $this->items[$key] = $obj;
+        }
+    }
 }

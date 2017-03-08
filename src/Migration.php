@@ -402,7 +402,7 @@ class Migration extends Model
                 self::CATEGORY_ATTRIBUTE_CODE
             );
             $item->setAttribute($attribute);
-            $collection->addItem($item);
+            $collection->addItem($item, $item->getEntityId());
         }
 
         return $collection;
@@ -547,12 +547,12 @@ class Migration extends Model
             /**
              * Insert category url alias
              */
-            if ($item->getUrlPath()) {
+            if ($item->getUrlKey()) {
                 $fields = "query, keyword";
                 $values = sprintf(
                     "'%s', '%s'",
                     'category_id=' . $item->getEntityId(),
-                    $item->getUrlPath()
+                    $item->getUrlKey()
                 );
                 $this->insert($this->prefix_oc . self::URL_ALIAS, $values, $fields);
             }
@@ -734,12 +734,12 @@ class Migration extends Model
             /**
              * Insert product url alias
              */
-            if ($product->getUrlPath()) {
+            if ($product->getUrlKey()) {
                 $fields = "query, keyword";
                 $values = sprintf(
                     "'%s', '%s'",
                     'product_id=' . $product->getEntityId(),
-                    $product->getUrlPath()
+                    $product->getUrlKey()
                 );
                 $this->insert($this->prefix_oc . self::URL_ALIAS, $values, $fields);
             }
@@ -1764,7 +1764,7 @@ class Migration extends Model
         $attributes = array();
         /** @var ProductCollection $products */
         /** @var Product $product */
-        foreach ($products->getItems() as &$product) {
+        foreach ($products->getItems() as $product) {
             $attribute = $this->getAttribute(
                 'catalog_product',
                 $product->getEntityId(),
@@ -1776,6 +1776,7 @@ class Migration extends Model
                 true
             );
             $product->setAttribute($attribute);
+            $products->updateItem($product, $product->getEntityId());
         }
 
         return $products;
@@ -1806,7 +1807,7 @@ class Migration extends Model
         $attributes = array();
         /** @var CategoryCollection $categories */
         /** @var Category $category */
-        foreach ($categories->getItems() as &$category) {
+        foreach ($categories->getItems() as $category) {
             $attribute = $this->getAttribute(
                 'catalog_category',
                 $category->getEntityId(),
@@ -1818,6 +1819,7 @@ class Migration extends Model
                 true
             );
             $category->setAttribute($attribute);
+            $categories->updateItem($category, $category->getEntityId());
         }
 
         return $categories;
