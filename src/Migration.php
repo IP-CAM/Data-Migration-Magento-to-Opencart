@@ -617,7 +617,9 @@ class Migration extends Model
             if (isset($mapping_data['price'])) {
                 $method = Helper::stringToMethod($mapping_data['price']);
                 if(method_exists('Product', $method)) {
-                    $price = $product->$method();
+                    if ($product->$method() > 0) {
+                        $price = $product->$method();
+                    }
                 }
             }
 
@@ -746,7 +748,7 @@ class Migration extends Model
                 $values = sprintf(
                     "'%s', '%s'",
                     'product_id=' . $product->getEntityId(),
-                    $product->getUrlKey()
+                    $product->getUrlKey() . '.html'
                 );
                 $this->insert($this->prefix_oc . self::URL_ALIAS, $values, $fields);
             }
