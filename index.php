@@ -7,6 +7,7 @@ date_default_timezone_set('Asia/Singapore');
 $time_start = microtime(true);
 
 $variables = new ArgumentsVariable($argv);
+
 $class = ucfirst($variables->getModule());
 if (!class_exists($class)) {
     print "Module not found";
@@ -17,7 +18,7 @@ $configuration = include('config.php');
 
 $config = new Config($configuration);
 
-$import = new $class($config, $variables->getPrint());
+$import = new $class($config, $variables->getFile(), $variables->getPrint());
 
 if (!$variables->getAction()) {
     $variables->setAction();
@@ -25,7 +26,7 @@ if (!$variables->getAction()) {
 
 if (method_exists($import, $variables->getAction())) {
     $action = $variables->getAction();
-    $resutl = $import->{$action}();
+    $result = $import->{$action}();
 }
 
 //Create a variable for end time

@@ -4,6 +4,8 @@ class Model
 {
     private $print = false;
 
+    private $file = '';
+
     /**
      * @var PDO
      */
@@ -32,9 +34,10 @@ class Model
     /**
      * Model constructor.
      * @param Config $config
+     * @param string $file
      * @param bool $print
      */
-    public function __construct(Config $config, $print = false)
+    public function __construct(Config $config, $file = '', $print = false)
     {
         $this->config = $config;
 
@@ -42,6 +45,7 @@ class Model
         $this->setDbOc($db_config['opencart']);
         $this->setDbM($db_config['magento']);
         $this->print = $print;
+        $this->file = $file;
     }
 
     private function setDbOc($db_config)
@@ -214,4 +218,36 @@ class Model
         $sql = "DELETE FROM {$table} WHERE {$condition}";
         $this->queryOC($sql);
     }
+
+    protected function isTableExist($table) {
+        $sql = "SHOW TABLES LIKE '{$table}'";
+        $result = $this->singleQueryOc($sql);
+
+        if ($result !== false) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param string $table
+     * @param string $update
+     * @param string $condition
+     */
+    protected function update($table, $update, $condition) {
+        $sql =  "UPDATE {$table} SET $update WHERE $condition";
+
+        $this->execute($sql);
+    }
+
+    /**
+     * @return bool
+     */
+    public function getFile()
+    {
+        return $this->file;
+    }
+
+
 }

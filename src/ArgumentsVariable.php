@@ -6,6 +6,7 @@ class ArgumentsVariable
     private $action = null;
     private $print = null;
     private $dryrun = null;
+    private $file = null;
     
     public function __construct($argv)
     {
@@ -50,6 +51,14 @@ class ArgumentsVariable
     public function getPrint()
     {
         return $this->print;
+    }
+
+    /**
+     * @return string
+     */
+    public function getFile()
+    {
+        return $this->file;
     }
 
     /**
