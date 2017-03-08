@@ -614,6 +614,13 @@ class Migration extends Model
             }
 
             $price = ($product->getPrice()) ? $product->getPrice() : 0;
+            if (isset($mapping_data['price'])) {
+                $method = Helper::stringToMethod($mapping_data['price']);
+                if(method_exists('Product', $method)) {
+                    $price = $product->$method();
+                }
+            }
+
             $status = ($product->getStatus()) ? $product->getStatus() : 0;
 
             $image = Helper::getProductImage($this->config, $product->getImage());
@@ -679,7 +686,7 @@ class Migration extends Model
             /**
              * Insert special price
              */
-            if ( $product->getSpecialPrice() > 0) {
+            if ($product->getSpecialPrice() > 0 && $price != $product->getSpecialPrice()) {
                 $start = ($product->getSpecialFromDate()) ? $product->getSpecialFromDate() : static::DATE_DEFAULT;
                 $fields = "product_id, customer_group_id, priority, price, date_start, date_end";
                 $values = sprintf(
