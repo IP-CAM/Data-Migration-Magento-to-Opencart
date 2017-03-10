@@ -656,6 +656,9 @@ class Migration extends Model
             $product_images = $this->getProductImage($product->getEntityId());
             /** @var  ProductImage $product_image */
             foreach ($product_images->getItems() as $product_image) {
+                if ($product->getImage() == $product_image->getValue() ) {
+                    continue;
+                }
                 $position = ($product_image->getPosition()) ? $product_image->getPosition() : 0;
                 $image = Helper::getProductImage($this->config, $product_image->getValue());
                 $fields = "product_id, image, sort_order";
