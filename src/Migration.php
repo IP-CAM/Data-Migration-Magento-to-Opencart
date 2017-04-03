@@ -783,7 +783,7 @@ class Migration extends Model
                     $item->getCustomerId(),
                     $item->getNickname(),
                     $item->getDetail(),
-                    0,
+                    $item->getValue(),
                     $item->getStatusId(),
                     $item->getCreatedAt(),
                     static::DATE_DEFAULT
@@ -1044,14 +1044,18 @@ class Migration extends Model
     private function getProductReview($product_id)
     {
         $sql = sprintf(
-            "SELECT %s FROM %s r LEFT JOIN %s d ON %s WHERE entity_id = 1 AND `entity_pk_value` = %d",
-            'r.review_id, r.created_at, d.title, d.detail, d.customer_id, d.nickname, r.status_id, r.entity_pk_value ',
+            "SELECT %s FROM %s r LEFT JOIN %s d ON %s " .
+                "JOIN %s rv ON %s " .
+                "WHERE r.entity_id = 1 AND r.`entity_pk_value` = %d",
+            'r.review_id, r.created_at, d.title, d.detail, d.customer_id, d.nickname, ' .
+                'r.status_id, r.entity_pk_value, rv.value',
             'review',
             'review_detail',
             'd.review_id = r.review_id',
+            'rating_option_vote',
+            'rv.review_id = r.review_id',
             $product_id
         );
-
         $result = $this->queryM($sql);
 
         $collection = new ProductReviewCollection();
@@ -1232,7 +1236,7 @@ class Migration extends Model
             $default_address_id = $item->getDefaultBilling();
             /** @var CustomerAddress $default_address */
             $default_address = $addresses_collection->getItem($default_address_id);
-
+            $password_hash = explode(":", $item->getPasswordHash());
             $data = array(
                 "customer_id" => $item->getEntityId(),
                 "customer_group_id" => $item->getGroupId(),
@@ -1243,8 +1247,8 @@ class Migration extends Model
                 "email" => $item->getEmail(),
                 "telephone" => $default_address->getTelephone(),
                 "fax" => $default_address->getFax(),
-                "password" => $item->getPasswordHash(),
-                "salt" => "",
+                "password" => $password_hash[0],
+                "salt" => isset($password_hash[1]) ? $password_hash[1] : "",
                 "cart" => "",
                 "wishlist" => "",
                 "newsletter" => $item->getNewsletter(),
@@ -1261,13 +1265,14 @@ class Migration extends Model
 
             $this->insertArray($table['customer'],$data);
 
-            $rewardPoints = $this->getRewardPoints($item->getEntityId());
-            /** @var RewardPointsTransaction $reward */
+            $rewardPoints = $this->getCustomerRewardPoints($item->getEntityId());
+            /** @var RewardPoints $reward */
             foreach ($rewardPoints->getItems() as $reward) {
-                $oder_id = ($reward->getOrderId()) ? $reward->getOrderId() : 0;
+                $oder_id = 0;
+                $title = "Points";
                 $fields = 'customer_id, order_id, description, points, date_added';
-                $values = "{$reward->getCustomerId()}, {$oder_id}, '{$reward->getTitle()}', 
-                    {$reward->getPointAmount()}, '{$reward->getCreatedTime()}'";
+                $values = "{$reward->getCustomerId()}, {$oder_id}, '{$title}', 
+                    {$reward->getPointBalance()}, '{$reward->getCreatedTime()}'";
                 $this->insert($table['customer_reward'], $values, $fields);
             }
         }
@@ -1286,6 +1291,28 @@ class Migration extends Model
         $collection = new RewardPointsTransactionCollection();
         foreach ($result as $v) {
             $item = new RewardPointsTransaction($v);
+            $collection->addItem($item);
+        }
+
+        return $collection;
+    }
+
+    private function getCustomerRewardPoints($customer_id)
+    {
+        $sql = sprintf(
+            "SELECT %s FROM %s LEFT JOIN %s ON %s WHERE c.customer_id = %d GROUP BY t.customer_id;",
+            'c.*, max(t.created_time) created_time',
+            'rewardpoints_customer c',
+            'rewardpoints_transaction t',
+            't.customer_id = c.customer_id',
+            $customer_id
+        );
+
+        $result = $this->queryM($sql);
+
+        $collection = new RewardPointsCollection();
+        foreach ($result as $v) {
+            $item = new RewardPoints($v);
             $collection->addItem($item);
         }
 
