@@ -10,6 +10,7 @@ class ProductReview
     private $nickname;
     private $entity_pk_value;
     private $status_id;
+    private $value;
 
     public function __construct($data)
     {
@@ -106,5 +107,12 @@ class ProductReview
         return $this->status_id;
     }
 
+    /**
+     * @return mixed
+     */
+    public function getValue()
+    {
+        return $this->value;
+    }
 
 }

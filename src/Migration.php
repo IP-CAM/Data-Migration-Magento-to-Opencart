@@ -1185,8 +1185,11 @@ class Migration extends Model
     /**
      * @return CustomerAddress
      */
-    private function getAddress($address_id)
+    private function getAddress($flat_order_address)
     {
+        $sql = "SELECT customer_address_id FROM sales_flat_order_address where entity_id = {$flat_order_address}";
+        $result =  $this->singleQueryM($sql, true);
+        $address_id = $result->customer_address_id;
         $sql = "SELECT entity_id FROM customer_address_entity WHERE entity_id = {$address_id}";
         $result =  $this->singleQueryM($sql);
         $address =  new CustomerAddress(array());
