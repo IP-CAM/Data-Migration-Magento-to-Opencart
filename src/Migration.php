@@ -170,6 +170,7 @@ class Migration extends Model
     private $languages;
     private $customer_custom_field_keys = array();
     private $mapping_custom_field = array();
+    private $mapping_shipping = array();
 
     /**
      * Migration constructor.
@@ -1471,6 +1472,11 @@ class Migration extends Model
      */
     private function insertOrder($tables, SalesFlatOrderCollection $collection)
     {
+        if (empty($this->mapping_shipping)) {
+            $mapping_data = $this->config->get('mapping_data');
+            $this->mapping_shipping = isset($mapping_data['shipping']) ?
+                $mapping_data['shipping'] : array();
+        }
         /** @var SalesFlatOrder $order */
         foreach ($collection->getItems() as  $order )
         {
@@ -1516,6 +1522,11 @@ class Migration extends Model
             }
             $store = $this->config->get('store');
             $order_id = $order->getIncrementId();
+            $shipping_description = $order->getShippingDescription();
+            $shipping_code = isset($this->mapping_shipping['code'][$shipping_description]) ?
+                $this->mapping_shipping['code'][$shipping_description] : $shipping_description;
+            $shipping_method = isset($this->mapping_shipping['method'][$shipping_description]) ?
+                $this->mapping_shipping['method'][$shipping_description] : $shipping_description;
             $data = array(
                 "order_id" => $order_id,
                 "invoice_no" => '',
@@ -1559,8 +1570,8 @@ class Migration extends Model
                 "shipping_zone_id" => $shipping_zone_id,
                 "shipping_address_format" => "",
                 "shipping_custom_field" => "",
-                "shipping_method" => "",
-                "shipping_code" => "",
+                "shipping_method" =>  $shipping_method,
+                "shipping_code" => $shipping_code,
                 "comment" => "",
                 "total" => $order->getGrandTotal(),
                 "order_status_id" => $order_status_id,
