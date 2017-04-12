@@ -41,6 +41,7 @@ class Customer
     private $firstname;
     private $prefix;
     private $created_in;
+    private $custom_fields;
 
     public function __construct($data)
     {
@@ -77,6 +78,22 @@ class Customer
             }
         }
     }
+
+    /**
+     * @param array $data
+     */
+    public function setCustomFields($data)
+    {
+        $this->custom_fields = $data;
+    }
+    /**
+     * @return array
+     */
+    public function getCustomFields()
+    {
+        return $this->custom_fields;
+    }
+
 
     /**
      * @return mixed

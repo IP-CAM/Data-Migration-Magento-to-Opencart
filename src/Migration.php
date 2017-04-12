@@ -168,6 +168,8 @@ class Migration extends Model
     private $order_status = array();
     private $currency = array();
     private $languages;
+    private $customer_custom_field_keys = array();
+    private $mapping_custom_field = array();
 
     /**
      * Migration constructor.
@@ -1135,6 +1137,12 @@ class Migration extends Model
      */
     private function getCustomers()
     {
+        if (empty($this->customer_custom_field_keys)) {
+            $custom_field_keys = $this->config->get('custom_field');
+            $this->customer_custom_field_keys = isset($custom_field_keys['customer']) ?
+                $custom_field_keys['customer'] : array();
+        }
+
         $type_id = static::CUSTOMER_TYPE_ID;
         $attribute_set_id = static::CUSTOMER_ATTRIBUTE_SET_ID;
         $entities = $this->getEntity('customer_entity', $type_id, $attribute_set_id);
@@ -1149,12 +1157,25 @@ class Migration extends Model
                 false
             );
             $item->setAttribute($attribute);
+            $this->setAttributeCustomField($item, $attribute, $this->customer_custom_field_keys);
             $collection->addItem($item, $item->getEntityId());
         }
 
         return $collection;
     }
 
+    private function setAttributeCustomField(&$item, $attribute, $custom_field_keys) {
+        $data = array();
+        foreach ($custom_field_keys as $key) {
+            if (isset($attribute[$key])) {
+                $v = $attribute[$key];
+                $k = key($v);
+                $data[$key] = $v[$k];
+            }
+        }
+
+        $item->setCustomFields($data);
+    }
 
     /**
      * @param int $customer_id
@@ -1210,7 +1231,33 @@ class Migration extends Model
         return $address;
     }
 
+    private function customerCustomField($data = array())
+    {
+        $customer_custom_field= array();
+        if (empty($this->mapping_custom_field)) {
+            $mapping_data = $this->config->get('mapping_data');
+            $this->mapping_custom_field = isset($mapping_data['custom_field']) ?
+                $mapping_data['custom_field'] : array();
+        }
 
+        foreach ($data as $key => $value) {
+            if (isset($this->mapping_custom_field[$key])) {
+                $custome_field =  $this->mapping_custom_field[$key];
+                $field_key = key($custome_field);
+                $field_id = null;
+                foreach ($custome_field[$field_key] as $field_value => $id) {
+                    if ($value == $field_value) {
+                        $field_id = (string)$id;
+                        break;
+                    }
+                }
+                if ($field_id) {
+                    $customer_custom_field[$field_key] = $field_id;
+                }
+            }
+        }
+        return json_encode($customer_custom_field);
+    }
 
     /**
      * @param CustomerCollection $collection
@@ -1237,6 +1284,7 @@ class Migration extends Model
              * Insert customer
              */
             $default_address_id = $item->getDefaultBilling();
+            $custom_field = $this->customerCustomField($item->getCustomFields());
             /** @var CustomerAddress $default_address */
             $default_address = $addresses_collection->getItem($default_address_id);
             $password_hash = explode(":", $item->getPasswordHash());
@@ -1256,7 +1304,7 @@ class Migration extends Model
                 "wishlist" => "",
                 "newsletter" => $item->getNewsletter(),
                 "address_id" => "",
-                "custom_field" => "",
+                "custom_field" => $custom_field,
                 "ip" => "",
                 "status" => $item->getIsActive(),
                 "approved" => 1,
@@ -1384,7 +1432,7 @@ class Migration extends Model
                 $item->getLastname(),
                 $item->getCompany(),
                 $item->getStreet(),
-                $item->getRegion(),
+                '',
                 $item->getCity(),
                 $item->getPostcode(),
                 $country_id,

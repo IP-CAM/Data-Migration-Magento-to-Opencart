@@ -120,6 +120,7 @@ return array(
             'out_of_stock' => 5,
             'is_shipping' => 1,
         ),
+        'custom_field' => array(),
     ),
     /*
     |--------------------------------------------------------------------------
@@ -131,4 +132,15 @@ return array(
     |
     */
     'store_id' => 0,
+
+   /*
+   |--------------------------------------------------------------------------
+   | Custom Field
+   |--------------------------------------------------------------------------
+   | Defined Magento attribute for opencart custom field
+   |
+   */
+    'custom_field' => array(
+        'customer' => array()
+    ),
 );
