@@ -1289,13 +1289,15 @@ class Migration extends Model
             /** @var CustomerAddress $default_address */
             $default_address = $addresses_collection->getItem($default_address_id);
             $password_hash = explode(":", $item->getPasswordHash());
+            $array_fist_name = array($item->getLastnameFurigana(), $item->getFirstnameFurigana());
+            $array_last_name = array($item->getLastname(), $item->getFirstname());
             $data = array(
                 "customer_id" => $item->getEntityId(),
                 "customer_group_id" => $item->getGroupId(),
                 "store_id" => static::STORE_ID,
                 "language_id" => $language_id,
-                "firstname" => $item->getFirstname(),
-                "lastname" => $item->getLastname(),
+                "firstname" => implode(" ", $array_fist_name),
+                "lastname" => implode(" ", $array_last_name),
                 "email" => $item->getEmail(),
                 "telephone" => $default_address->getTelephone(),
                 "fax" => $default_address->getFax(),
@@ -1423,14 +1425,16 @@ class Migration extends Model
                 $zone_id = $this->magento_regions[$item->getRegion()];
             }
 
+            $array_fist_name = array($item->getLastnameFurigana(), $item->getFirstnameFurigana());
+            $array_last_name = array($item->getLastname(), $item->getFirstname());
             $fields = "address_id, customer_id, firstname, lastname, company, address_1, address_2, city, postcode, " .
                 "country_id, zone_id, custom_field";
             $values = sprintf(
                 "%d, %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, %d, '%s'",
                 $item->getEntityId(),
                 $item->getParentId(),
-                $item->getFirstname(),
-                $item->getLastname(),
+                implode(" ", $array_fist_name),
+                implode(" ", $array_last_name),
                 $item->getCompany(),
                 $item->getStreet(),
                 '',
@@ -1546,7 +1550,7 @@ class Migration extends Model
                 "payment_lastname" => $payment->getLastname(),
                 "payment_company" => $payment->getCompany(),
                 "payment_address_1" => $payment->getStreet(),
-                "payment_address_2" => $payment->getRegion(),
+                "payment_address_2" => "",
                 "payment_city" => $payment->getCity(),
                 "payment_postcode" => $payment->getPostcode(),
                 "payment_country" => $payment->getCountryId(),
@@ -1561,7 +1565,7 @@ class Migration extends Model
                 "shipping_lastname" => $shipping->getLastname(),
                 "shipping_company" => $shipping->getCompany(),
                 "shipping_address_1" => $shipping->getStreet(),
-                "shipping_address_2" => $shipping->getRegion(),
+                "shipping_address_2" => "",
                 "shipping_city" => $shipping->getCity(),
                 "shipping_postcode" => $shipping->getPostcode(),
                 "shipping_country" => $shipping->getCountryId(),
